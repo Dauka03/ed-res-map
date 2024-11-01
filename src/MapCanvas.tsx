@@ -9,21 +9,19 @@ interface Level {
   points: Point[];
 }
 
-const levels: Level[] = [
-  {
-    points: [
-      { x: 0.74, y: 0.85 }, 
-      { x: 0.45, y: 0.75 },
-      { x: 0.68, y: 0.55 },
-      { x: 0.38, y: 0.40 },
-      { x: 0.70, y: 0.30 },
-    ],
-  },
-];
+// Define a single level with points
+const level: Level = {
+  points: [
+    { x: 0.74, y: 0.85 }, 
+    { x: 0.45, y: 0.75 },
+    { x: 0.68, y: 0.55 },
+    { x: 0.38, y: 0.40 },
+    { x: 0.70, y: 0.30 },
+  ],
+};
 
 const MapCanvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [currentLevel, setCurrentLevel] = useState<number>(0);
   const [currentPointIndex, setCurrentPointIndex] = useState<number>(0);
 
   const mobileWidth = 360;
@@ -57,8 +55,6 @@ const MapCanvas: React.FC = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(mapImage, 0, 0, canvas.width, canvas.height);
 
-      const level = levels[currentLevel];
-
       const pointImage = new Image();
       pointImage.src = '/src/assets/point.png'; 
       pointImage.onload = () => {
@@ -89,7 +85,7 @@ const MapCanvas: React.FC = () => {
     window.addEventListener('resize', resizeCanvas);
 
     return () => window.removeEventListener('resize', resizeCanvas);
-  }, [currentLevel, currentPointIndex]);
+  }, [currentPointIndex]); // Only depend on currentPointIndex
 
   const handleClick = (event: MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -98,15 +94,14 @@ const MapCanvas: React.FC = () => {
     const clickX = event.clientX - rect.left;
     const clickY = event.clientY - rect.top;
 
-    const level = levels[currentLevel];
-    const closestIndex = findClosestPointIndex(clickX, clickY, level);
+    const closestIndex = findClosestPointIndex(clickX, clickY);
 
     if (closestIndex !== null) {
       setCurrentPointIndex(closestIndex);
     }
   };
 
-  const findClosestPointIndex = (x: number, y: number, level: Level) => {
+  const findClosestPointIndex = (x: number, y: number) => {
     let closestIndex = null;
     let minDistance = Infinity;
 
