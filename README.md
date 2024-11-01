@@ -3,6 +3,8 @@
 npm install
 npm run dev
 ```
+![image](https://github.com/user-attachments/assets/c05bfb32-1d2b-4aef-9c25-1f08b064f7ff)
+![image](https://github.com/user-attachments/assets/91e3b6a7-1fb1-4230-85ec-ead0ff802f65)
 
 # React + TypeScript + Vite
 
