@@ -5,7 +5,6 @@ import MapCanvas from './MapCanvas';
 const App: React.FC = () => {
   return (
     <div className="App">
-      <h1>Interactive Map</h1>
       <MapCanvas />
     </div>
   );

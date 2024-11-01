@@ -1,61 +1,93 @@
 import React, { useRef, useEffect, useState, MouseEvent } from 'react';
 
-// Определим интерфейс для координатных точек
 interface Point {
-  x: number;
-  y: number;
+  x: number; 
+  y: number; 
 }
+
+interface Level {
+  points: Point[];
+}
+
+const levels: Level[] = [
+  {
+    points: [
+      { x: 0.74, y: 0.85 }, 
+      { x: 0.45, y: 0.75 },
+      { x: 0.68, y: 0.55 },
+    ],
+  },
+];
 
 const MapCanvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [currentPosition, setCurrentPosition] = useState<Point>({ x: 50, y: 50 });
-  const points: Point[] = [
-    { x: 50, y: 50 },
-    { x: 100, y: 100 },
-    { x: 150, y: 150 },
-    // добавьте остальные точки
-  ];
+  const [currentLevel, setCurrentLevel] = useState<number>(0);
+  const [currentPointIndex, setCurrentPointIndex] = useState<number>(0);
 
-  useEffect(() => {
+  const mobileWidth = 360;
+  const mobileHeight = 640;
+
+  const clickRadius = 30;
+
+  const resizeCanvas = () => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      if (window.innerWidth <= 768) {
+        canvas.width = mobileWidth;
+        canvas.height = mobileHeight;
+      } else {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      drawCanvas(); 
+    }
+  };
+
+  const drawCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Функция для рендеринга карты и точек
-    const drawMap = () => {
+    const mapImage = new Image();
+    mapImage.src = '/src/assets/map.png';
+    mapImage.onload = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(mapImage, 0, 0, canvas.width, canvas.height);
 
-      // Рендерим дорожку
-      ctx.strokeStyle = 'blue';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      points.forEach((point, index) => {
-        if (index === 0) {
-          ctx.moveTo(point.x, point.y);
-        } else {
-          ctx.lineTo(point.x, point.y);
-        }
-      });
-      ctx.stroke();
+      const level = levels[currentLevel];
 
-      // Рендерим точки
-      ctx.fillStyle = 'red';
-      points.forEach(point => {
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
-        ctx.fill();
-      });
+      const pointImage = new Image();
+      pointImage.src = '/src/assets/point.png'; 
+      pointImage.onload = () => {
+        level.points.forEach(point => {
+          const scaledPoint = {
+            x: point.x * canvas.width,  
+            y: point.y * canvas.height, 
+          };
+          ctx.drawImage(pointImage, scaledPoint.x - 15, scaledPoint.y - 15, 30, 30); 
+        });
 
-      // Рендерим фигурку
-      ctx.fillStyle = 'green';
-      ctx.beginPath();
-      ctx.arc(currentPosition.x, currentPosition.y, 10, 0, 2 * Math.PI);
-      ctx.fill();
+        const monkeyImage = new Image();
+        monkeyImage.src = '/src/assets/monkey.png';
+        monkeyImage.onload = () => {
+          const currentPoint = level.points[currentPointIndex];
+          const scaledCurrentPoint = {
+            x: currentPoint.x * canvas.width,
+            y: currentPoint.y * canvas.height,
+          };
+          ctx.drawImage(monkeyImage, scaledCurrentPoint.x - 130, scaledCurrentPoint.y - 130, 160, 160);
+        };
+      };
     };
+  };
 
-    drawMap();
-  }, [currentPosition]);
+  useEffect(() => {
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    return () => window.removeEventListener('resize', resizeCanvas);
+  }, [currentLevel, currentPointIndex]);
 
   const handleClick = (event: MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -64,14 +96,38 @@ const MapCanvas: React.FC = () => {
     const clickX = event.clientX - rect.left;
     const clickY = event.clientY - rect.top;
 
-    // Находим ближайшую точку и перемещаем фигурку
-    const closestPoint = points.reduce((prev, curr) =>
-      Math.hypot(curr.x - clickX, curr.y - clickY) < Math.hypot(prev.x - clickX, prev.y - clickY) ? curr : prev
-    );
-    setCurrentPosition({ x: closestPoint.x, y: closestPoint.y });
+    const level = levels[currentLevel];
+    const closestIndex = findClosestPointIndex(clickX, clickY, level);
+
+    if (closestIndex !== null) {
+      setCurrentPointIndex(closestIndex);
+    }
   };
 
-  return <canvas ref={canvasRef} onClick={handleClick} width={300} height={300} />;
+  const findClosestPointIndex = (x: number, y: number, level: Level) => {
+    let closestIndex = null;
+    let minDistance = Infinity;
+
+    level.points.forEach((point, index) => {
+      const scaledPoint = {
+        x: point.x * canvasRef.current!.width,
+        y: point.y * canvasRef.current!.height,
+      };
+      const distance = Math.sqrt((scaledPoint.x - x) ** 2 + (scaledPoint.y - y) ** 2);
+      if (distance < minDistance && distance <= clickRadius) {
+        minDistance = distance;
+        closestIndex = index;
+      }
+    });
+
+    return closestIndex;
+  };
+
+  return (
+    <div style={{ width: '100vw', height: '100vh' }}>
+      <canvas ref={canvasRef} onClick={handleClick} style={{ width: '100%', height: '100%' }} />
+    </div>
+  );
 };
 
 export default MapCanvas;
